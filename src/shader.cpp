@@ -9,6 +9,15 @@
 
 
 namespace shaders {
+    enum ShaderType {
+        NONE = -1, VS = 0, FS = 1
+    };
+
+    struct ShaderSource {
+        std::string vertex_shader;
+        std::string fragment_shader;
+    };
+
     constexpr uint32_t stype_to_gl(ShaderType s) {
         switch(s) {
             case ShaderType::VS:

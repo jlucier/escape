@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "renderer.hpp"
+#include <GL/glew.h>
 
 
 template<typename T>
@@ -41,7 +41,7 @@ public:
 
     void bind() const;
     void unbind() const;
-    uint32_t getCount() const;
+    uint32_t get_count() const;
 };
 
 class VertexBuffer {

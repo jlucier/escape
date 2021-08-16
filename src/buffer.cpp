@@ -1,4 +1,5 @@
 #include "buffer.hpp"
+#include "renderer.hpp"
 
 // IndexBuffer
 
@@ -22,7 +23,7 @@ void IndexBuffer::unbind() const {
     GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 }
 
-uint32_t IndexBuffer::getCount() const {
+uint32_t IndexBuffer::get_count() const {
     return this->count;
 }
 

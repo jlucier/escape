@@ -12,3 +12,14 @@ void GlCheckError(const char* func, const char* file, int line) {
         throw std::runtime_error(s.str());
     }
 }
+
+namespace renderer {
+    void draw(const VertexArray& vao, const IndexBuffer& ib, const Shader& s) {
+        s.bind();
+        vao.bind();
+        ib.bind();
+
+        GLCall(glClear(GL_COLOR_BUFFER_BIT));
+        GLCall(glDrawElements(GL_TRIANGLES, ib.get_count(), GL_UNSIGNED_INT, nullptr));
+    }
+}

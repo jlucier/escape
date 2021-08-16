@@ -2,7 +2,8 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-
+#include "buffer.hpp"
+#include "shader.hpp"
 
 #define GLCall(x) \
     GlClearError(); \
@@ -11,3 +12,7 @@
 
 void GlClearError();
 void GlCheckError(const char* func, const char* file, int line);
+
+namespace renderer {
+    void draw(const VertexArray& vao, const IndexBuffer& ib, const Shader& s);
+}

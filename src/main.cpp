@@ -65,15 +65,10 @@ int main() {
     IndexBuffer ib(indices, 6);
 
     Shader s("res/shaders/basic.glsl");
-    s.bind();
-    ib.bind();
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
-        /* Render here */
-        GLCall(glClear(GL_COLOR_BUFFER_BIT));
-
-        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+        renderer::draw(vao, ib, s);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
