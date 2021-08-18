@@ -14,5 +14,6 @@ void GlClearError();
 void GlCheckError(const char* func, const char* file, int line);
 
 namespace renderer {
+    void clear();
     void draw(const VertexArray& vao, const IndexBuffer& ib, const Shader& s);
 }

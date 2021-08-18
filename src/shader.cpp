@@ -129,9 +129,26 @@ uint32_t Shader::id() const {
 }
 
 void Shader::bind() const {
-    glUseProgram(this->renderer_id);
+    GLCall(glUseProgram(this->renderer_id));
 }
 
 void Shader::unbind() const {
     glUseProgram(0);
+}
+
+uint32_t Shader::get_uniform_loc(const std::string& name) const {
+    if (this->uniform_locations.contains(name))
+        return this->uniform_locations[name];
+
+    int loc = glGetUniformLocation(this->renderer_id, name.c_str());
+    this->uniform_locations[name] = loc;
+    return loc;
+}
+
+void Shader::set_u4f(const std::string& name, float a, float b, float c, float d) const {
+    int loc = this->get_uniform_loc(name);
+    if (loc == -1)
+        throw std::runtime_error("Cannot set uniform with unknown location: " + name);
+
+    GLCall(glUniform4f(loc, a, b, c, d));
 }

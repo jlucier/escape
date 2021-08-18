@@ -66,8 +66,18 @@ int main() {
 
     Shader s("res/shaders/basic.glsl");
 
+    float step = 0.025;
+    float r = 0.1;
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
+        r += step;
+        if (r >= 1 or r <= 0)
+            step *= -1;
+
+        s.bind();
+        s.set_u4f("u_color", r, 0.3, 0.8, 1.0);
+
+        renderer::clear();
         renderer::draw(vao, ib, s);
 
         /* Swap front and back buffers */
