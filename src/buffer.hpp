@@ -36,12 +36,13 @@ private:
     uint32_t count;
 
 public:
-    IndexBuffer(const uint32_t* data, uint32_t count);
+    IndexBuffer(uint32_t count, const uint32_t* data=nullptr);
     ~IndexBuffer();
 
     void bind() const;
     void unbind() const;
     uint32_t get_count() const;
+    void set_data(const uint32_t* data, uint32_t count) const;
 };
 
 class VertexBuffer {
@@ -49,9 +50,10 @@ private:
     uint32_t renderer_id;
 
 public:
-    VertexBuffer(const void* data, uint32_t size);
+    VertexBuffer(uint32_t size, const void* data=nullptr);
     ~VertexBuffer();
 
+    void set_data(const void* data, uint32_t size) const;
     void bind() const;
     void unbind() const;
 };

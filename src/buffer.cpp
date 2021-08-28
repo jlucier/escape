@@ -3,11 +3,9 @@
 
 // IndexBuffer
 
-IndexBuffer::IndexBuffer(const uint32_t* data, uint32_t count)
-    : count(count) {
-
+IndexBuffer::IndexBuffer(uint32_t count, const uint32_t* data) : count(count) {
     GLCall(glGenBuffers(1, &this->renderer_id));
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->renderer_id));
+    this->bind();
     GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(uint32_t), data, GL_STATIC_DRAW));
 }
 
@@ -27,16 +25,26 @@ uint32_t IndexBuffer::get_count() const {
     return this->count;
 }
 
+void IndexBuffer::set_data(const uint32_t* data, uint32_t count) const {
+    this->bind();
+    GLCall(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, count * sizeof(uint32_t), data));
+}
+
 // VertexBuffer
 
-VertexBuffer::VertexBuffer(const void* data, uint32_t size) {
+VertexBuffer::VertexBuffer(uint32_t size, const void* data) {
     GLCall(glGenBuffers(1, &this->renderer_id));
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, this->renderer_id));
+    this->bind();
     GLCall(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
 }
 
 VertexBuffer::~VertexBuffer() {
     GLCall(glDeleteBuffers(1, &this->renderer_id));
+}
+
+void VertexBuffer::set_data(const void* data, uint32_t size) const {
+    this->bind();
+    GLCall(glBufferSubData(GL_ARRAY_BUFFER, 0, size, data));
 }
 
 void VertexBuffer::bind() const {
@@ -78,7 +86,7 @@ void VertexArray::add_buffer(const VertexBuffer& vb, const VertexBufferLayout& l
             i, elem.count, elem.type, elem.normalized, layout.get_stride(), (const void*)offset
         ));
 
-        offset += gltype_size(elem.type);
+        offset += elem.count * gltype_size(elem.type);
         i++;
     }
 }

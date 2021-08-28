@@ -25,4 +25,5 @@ target_sources(escape PRIVATE
     src/buffer.cpp
     src/renderer.cpp
     src/shader.cpp
+    src/map.cpp
 )
