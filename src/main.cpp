@@ -1,3 +1,6 @@
+#include <ctime>
+#include <random>
+
 #include "core.hpp"
 #include "renderer.hpp"
 #include "buffer.hpp"
@@ -15,7 +18,7 @@ int main() {
     if (!window)
         return -1;
 
-    auto m = std::make_unique<Map>(128, 128);
+    auto m = std::make_unique<Map>(192, 256);
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
