@@ -19,7 +19,7 @@ target_include_directories(escape PRIVATE
 )
 target_link_libraries(escape PRIVATE
     ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARIES}
+    GLEW::glew
     glfw
 )
 target_precompile_headers(escape PRIVATE src/core.hpp)

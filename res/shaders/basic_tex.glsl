@@ -10,7 +10,7 @@ out vec2 v_TexCoord;
 void main() {
     gl_Position = u_MVP * position;
     v_TexCoord = uv;
-};
+}
 
 #shader fragment
 #version 330 core
@@ -21,4 +21,4 @@ in vec2 v_TexCoord;
 
 void main() {
     color = texture(u_Texture, v_TexCoord);
-};
+}
