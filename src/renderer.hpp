@@ -1,9 +1,12 @@
 #pragma once
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include "buffer.hpp"
-#include "shader.hpp"
+#include "core.hpp"
+
+// forwards
+
+class VertexArray;
+class IndexBuffer;
+class Shader;
 
 #define GLCall(x) \
     GlClearError(); \
@@ -13,8 +16,13 @@
 void GlClearError();
 void GlCheckError(const char* func, const char* file, int line);
 
-namespace renderer {
-    GLFWwindow* init_window(uint16_t height=1080, uint16_t width=1920);
-    void clear();
-    void draw(const VertexArray& vao, const IndexBuffer& ib, const Shader& s);
-}
+class Renderer {
+private:
+    glm::mat4 proj;
+public:
+    Renderer() {}
+
+    GLFWwindow* init_window(uint16_t height=960, uint16_t width=1280);
+    void clear() const;
+    void draw(const VertexArray& vao, const IndexBuffer& ib, const Shader& s) const;
+};

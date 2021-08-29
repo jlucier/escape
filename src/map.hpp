@@ -1,80 +1,50 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-
 #include "buffer.hpp"
 #include "shader.hpp"
+#include "texture.hpp"
 
+struct Color {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
 
-#define MAP_START -0.8f
-#define MAP_END 0.8f
+    static constexpr Color dark_brown() { return Color(62, 39, 35); }
+    static constexpr Color light_brown() { return Color(109, 76, 65); }
 
-struct V2 {
-    float x;
-    float y;
+    static constexpr Color red() { return Color(255, 0, 0); }
+    static constexpr Color green() { return Color(0, 255, 0); }
+    static constexpr Color blue() { return Color(0, 0, 255); }
+    static constexpr Color orange() { return Color(255, 140, 0); }
+    static constexpr Color yellow() { return Color(255, 255, 0); }
+    static constexpr Color teal() { return Color(0, 128, 128); }
+    static constexpr Color cyan() { return Color(0, 255, 255); }
+    static constexpr Color purple() { return Color(148, 0, 211); }
+    static constexpr Color pink() { return Color(255, 105, 180); }
+    static constexpr Color black() { return Color(0, 0, 0); }
+    static constexpr Color white() { return Color(255, 255, 255); }
+    static constexpr Color magenta() { return Color(255, 0, 255); }
+    static constexpr Color maroon() { return Color(128, 25, 20); }
+    static constexpr Color gray() { return Color(128, 128, 128); }
+
+    constexpr Color(uint8_t r, uint8_t g, uint8_t b) : r(r), g(g), b(b), a(1) {}
 };
 
-struct V4 {
-    float x;
-    float y;
-    float z;
-    float d;
-};
-
-struct Vertex {
-    V2 position;
-    V4 color;
-
-    Vertex(V2&& pos, V4&& color) : position(pos), color(color) {}
-
-    friend std::ostream& operator<<(std::ostream& out, const Vertex& v) {
-        return out << "<Vertex pos={"
-            << v.position.x << ","
-            << v.position.y << "}"
-            << " color={"
-            << v.color.x << ","
-            << v.color.y << ","
-            << v.color.z << ","
-            << v.color.d << "}"
-            << ">";
-    }
-};
 
 class Map {
 private:
-    static constexpr char* shader_path = "res/shaders/basic.glsl";
+    static constexpr char* shader_path = "res/shaders/basic_tex.glsl";
 
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-
+public:
     size_t height;
     size_t width;
 
+    Texture2D tex;
     VertexArray vao;
     VertexBuffer vb;
     IndexBuffer ib;
-    Shader s;
-
-    /*
-     * Width in vertices
-     */
-    constexpr size_t v_width() const {
-        return this->width + 1;
-    }
-
-    /*
-     * Height in vertices
-     */
-    constexpr size_t v_height() const {
-        return this->height+ 1;
-    }
-
-    void init();
-
-public:
+    Shader shader;
 
     Map(size_t height, size_t width);
-    void draw() const;
-    friend std::ostream& operator<<(std::ostream& out, const Map& m);
 };

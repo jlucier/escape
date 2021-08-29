@@ -1,33 +1,6 @@
 #pragma once
 
-#include <cstdint>
-#include <stdexcept>
-#include <type_traits>
-#include <vector>
-
-#include <GL/glew.h>
-
-
-template<typename T>
-constexpr uint32_t ctype_to_gl() {
-    if constexpr(std::is_same_v<T, float>)
-        return GL_FLOAT;
-    else if constexpr(std::is_same_v<T, uint32_t>)
-        return GL_UNSIGNED_INT;
-    else if constexpr(std::is_same_v<T, char>)
-        return GL_UNSIGNED_BYTE;
-
-    throw std::invalid_argument("Unrecognized type in ctype_to_gl");
-}
-
-constexpr uint32_t gltype_size(uint32_t type) {
-    switch (type) {
-        case GL_FLOAT: return 4;
-        case GL_UNSIGNED_INT: return 4;
-        case GL_UNSIGNED_BYTE: return 1;
-    }
-    return 0;
-}
+#include "core.hpp"
 
 
 class IndexBuffer {
@@ -76,9 +49,9 @@ public:
 
     template<typename T>
     void push(uint32_t count, bool normalized=false) {
-        uint32_t gltype = ctype_to_gl<T>();
+        uint32_t gltype = utils::ctype_to_gl<T>();
         this->attribs.push_back({gltype, count, normalized ? GL_TRUE : GL_FALSE});
-        this->stride += count * gltype_size(gltype);
+        this->stride += count * utils::gltype_size(gltype);
     }
 
     auto begin() const {

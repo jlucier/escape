@@ -86,7 +86,7 @@ void VertexArray::add_buffer(const VertexBuffer& vb, const VertexBufferLayout& l
             i, elem.count, elem.type, elem.normalized, layout.get_stride(), (const void*)offset
         ));
 
-        offset += elem.count * gltype_size(elem.type);
+        offset += elem.count * utils::gltype_size(elem.type);
         i++;
     }
 }

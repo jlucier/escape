@@ -136,19 +136,34 @@ void Shader::unbind() const {
     glUseProgram(0);
 }
 
-uint32_t Shader::get_uniform_loc(const std::string& name) const {
+int Shader::get_uniform_loc(const std::string& name) const {
     if (this->uniform_locations.contains(name))
         return this->uniform_locations[name];
 
-    int loc = glGetUniformLocation(this->renderer_id, name.c_str());
+    GLCall(int loc = glGetUniformLocation(this->renderer_id, name.c_str()));
     this->uniform_locations[name] = loc;
     return loc;
 }
 
-void Shader::set_u4f(const std::string& name, float a, float b, float c, float d) const {
+int Shader::get_loc_or_throw(const std::string& name) const {
     int loc = this->get_uniform_loc(name);
     if (loc == -1)
         throw std::runtime_error("Cannot set uniform with unknown location: " + name);
+    return loc;
+}
 
-    GLCall(glUniform4f(loc, a, b, c, d));
+bool Shader::has_uniform(const std::string& name) const {
+    return this->get_uniform_loc(name) != -1;
+}
+
+void Shader::set_u4f(const std::string& name, float a, float b, float c, float d) const {
+    GLCall(glUniform4f(this->get_loc_or_throw(name), a, b, c, d));
+}
+
+void Shader::set_u1i(const std::string& name, int i) const {
+    GLCall(glUniform1i(this->get_loc_or_throw(name), i));
+}
+
+void Shader::set_umat4f(const std::string& name, const glm::mat4& mat) const {
+    GLCall(glUniformMatrix4fv(this->get_loc_or_throw(name), 1, GL_FALSE, &mat[0][0]));
 }
