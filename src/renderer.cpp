@@ -43,8 +43,8 @@ GLFWwindow* Renderer::init_window(uint16_t height, uint16_t width) {
 
     // set up "camera" / projection
     float aspect_ratio = float(width) / height;
-    float h = 2.0f / aspect_ratio;
-    float w = 2.0f;
+    float h = PROJ_FACTOR / aspect_ratio;
+    float w = PROJ_FACTOR;
 
     this->proj = glm::ortho(-w, w, -h, h, -1.0f, 1.0f);
 

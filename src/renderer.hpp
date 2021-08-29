@@ -2,6 +2,8 @@
 
 #include "core.hpp"
 
+#define PROJ_FACTOR 2.0f
+
 // forwards
 
 class VertexArray;
