@@ -51,4 +51,5 @@ public:
     Shader shader;
 
     Map(size_t height, size_t width, size_t seed=0);
+    void regenerate(size_t seed=0);
 };

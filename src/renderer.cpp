@@ -15,7 +15,12 @@ void GlCheckError(const char* func, const char* file, int line) {
     }
 }
 
-GLFWwindow* Renderer::init_window(uint16_t height, uint16_t width) {
+Renderer::~Renderer() {
+    if (this->window)
+        glfwTerminate();
+}
+
+GLFWwindow* Renderer::init_window(const std::string& name , uint16_t height, uint16_t width) {
     if (!glfwInit()) {
         throw std::runtime_error("Could not initialize GLFW");
     }
@@ -25,7 +30,7 @@ GLFWwindow* Renderer::init_window(uint16_t height, uint16_t width) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(width, height, "Escape", NULL, NULL);
+    this->window = glfwCreateWindow(width, height, name.c_str(), NULL, NULL);
 
     if (!window) {
         glfwTerminate();
@@ -49,11 +54,15 @@ GLFWwindow* Renderer::init_window(uint16_t height, uint16_t width) {
 
     this->proj = glm::ortho(-w, w, -h, h, -1.0f, 1.0f);
 
-    return window;
+    return this->window;
 }
 
 void Renderer::clear() const {
     GLCall(glClear(GL_COLOR_BUFFER_BIT));
+}
+
+void Renderer::swap_buffers() const {
+    glfwSwapBuffers(this->window);
 }
 
 void Renderer::draw(const VertexArray& vao, const IndexBuffer& ib, const Shader& s) const {

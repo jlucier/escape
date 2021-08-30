@@ -1,39 +1,44 @@
+#include <ctime>
 
 #include "core.hpp"
+#include "application.hpp"
 #include "renderer.hpp"
 #include "buffer.hpp"
 #include "shader.hpp"
 #include "map.hpp"
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 960
+#define MAP_H 60
+#define MAP_W 80
 
-int main() {
-    Renderer renderer;
+class Escape : public Application {
+    mutable std::unique_ptr<Map> m;
 
-    auto window = renderer.init_window(WINDOW_HEIGHT, WINDOW_WIDTH);
-
-    if (!window)
-        return -1;
-
-    auto m = std::make_unique<Map>(60, 80);
-
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window)) {
-
-        renderer.clear();
-
-        m->tex.bind();
-        m->shader.bind();
-        m->shader.set_u1i("u_Texture", 0);
-        renderer.draw(m->vao, m->ib, m->shader);
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-        /* Poll for and process events */
-        glfwPollEvents();
+    void init_map() {
+        this->m->regenerate(time(NULL));
     }
 
-    glfwTerminate();
+public:
+    Escape() : Application("Escape") {
+        this->m = std::make_unique<Map>(MAP_H, MAP_W);
+    }
+
+
+protected:
+    void on_update() override {
+        this->m->tex.bind();
+        this->m->shader.bind();
+        this->m->shader.set_u1i("u_Texture", 0);
+        this->renderer.draw(this->m->vao, this->m->ib, this->m->shader);
+    }
+
+    void on_key(int key, int mods) override {
+        this->init_map();
+    }
+};
+
+
+int main() {
+    Escape app;
+    app.run();
     return 0;
 }

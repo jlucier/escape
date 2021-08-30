@@ -78,31 +78,7 @@ public:
 
 Map::Map(size_t height, size_t width, size_t seed)
     : height(height), width(width), vb(64), ib(6), shader(shader_path) {
-
-    std::default_random_engine e(seed);
-    std::uniform_real_distribution dist(0.0f, 1.0f);
-
-    MapData m(height, width);
-    for (auto& c : m) {
-        c = dist(e) < .55;
-    }
-
-    m.smooth(10);
-    m.null_border();
-
-    std::vector<Color> img_data;
-    img_data.reserve(height * width);
-
-    for (auto& c : m) {
-        if (c)
-            img_data.push_back(Color::light_brown());
-        else
-            img_data.push_back(Color::dark_brown());
-    }
-
-    this->tex.load_data(height, width, (uint8_t*)img_data.data());
-
-    float asp = float(height) / float(width);
+    float asp = float(this->height) / float(this->width);
     float verts[] = {
         -1.0f, -asp, 0.0f, 0.0f, // bottom left
         1.0f, -asp, 1.0f, 0.0f, // bottom right
@@ -117,5 +93,32 @@ Map::Map(size_t height, size_t width, size_t seed)
     layout.push<float>(2);
     layout.push<float>(2);
 
-    vao.add_buffer(this->vb, layout);
+    this->vao.add_buffer(this->vb, layout);
+
+    this->regenerate(seed);
+}
+
+void Map::regenerate(size_t seed) {
+    std::default_random_engine e(seed);
+    std::uniform_real_distribution dist(0.0f, 1.0f);
+
+    MapData m(this->height, this->width);
+    for (auto& c : m) {
+        c = dist(e) < .55;
+    }
+
+    m.smooth(10);
+    m.null_border();
+
+    std::vector<Color> img_data;
+    img_data.reserve(this->height * this->width);
+
+    for (auto& c : m) {
+        if (c)
+            img_data.push_back(Color::light_brown());
+        else
+            img_data.push_back(Color::dark_brown());
+    }
+
+    this->tex.load_data(this->height, this->width, (uint8_t*)img_data.data());
 }
