@@ -35,7 +35,10 @@ struct Color {
 class Map {
 private:
     static constexpr char* shader_path = "res/shaders/basic_tex.glsl";
-    size_t seed;
+    static constexpr uint32_t indices[] = {
+        0, 1, 2,
+        2, 3, 0
+    };
 
 public:
     size_t height;
