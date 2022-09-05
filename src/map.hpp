@@ -29,7 +29,16 @@ struct Color {
     static constexpr Color gray() { return Color(128, 128, 128); }
 
     constexpr Color(uint8_t r, uint8_t g, uint8_t b) : r(r), g(g), b(b), a(1) {}
+
+    Color blend(const Color& other, double alpha = 0.5) {
+        return {
+            (uint8_t)(this->r * alpha + other.r * (1 - alpha)),
+            (uint8_t)(this->g * alpha + other.g * (1 - alpha)),
+            (uint8_t)(this->b * alpha + other.b * (1 - alpha)),
+        };
+    }
 };
+
 
 
 class Map {

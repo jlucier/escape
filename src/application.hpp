@@ -3,8 +3,10 @@
 #include "core.hpp"
 #include "renderer.hpp"
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 960
+// #define WINDOW_WIDTH 1280
+// #define WINDOW_HEIGHT 960
+#define WINDOW_WIDTH 2560
+#define WINDOW_HEIGHT 1440
 
 class Application {
 protected:

@@ -7,8 +7,8 @@
 #include "shader.hpp"
 #include "map.hpp"
 
-#define MAP_H 60
-#define MAP_W 80
+#define MAP_H 90
+#define MAP_W 120
 
 class Escape : public Application {
     mutable std::unique_ptr<Map> m;

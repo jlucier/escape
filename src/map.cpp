@@ -1,7 +1,50 @@
+#include <array>
+#include <chrono>
 #include <random>
+#include <unordered_set>
+#include <vector>
 
 #include "map.hpp"
 #include "core.hpp"
+
+
+double now() {
+    std::chrono::duration<double> now = std::chrono::system_clock::now().time_since_epoch();
+    return now.count();
+}
+
+static const std::array<Color, 13> room_colors{
+    Color::red(),
+    Color::green(),
+    Color::blue(),
+    Color::orange(),
+    Color::yellow(),
+    Color::teal(),
+    Color::cyan(),
+    Color::purple(),
+    Color::pink(),
+    Color::black(),
+    Color::magenta(),
+    Color::maroon(),
+    Color::gray(),
+};
+
+struct Coord {
+    size_t x;
+    size_t y;
+
+    bool operator==(const Coord& o) const {
+        return this->x == o.x and this->y == o.y;
+    }
+};
+
+template <>
+struct std::hash<Coord> {
+  size_t operator()(const Coord& c) const noexcept {
+    return c.x * 1e6 + c.y;
+  }
+};
+
 
 class MapData {
 private:
@@ -22,6 +65,26 @@ public:
 
     auto& operator()(size_t y, size_t x) {
         return this->data.at(y * this->width + x);
+    }
+
+    auto& operator()(const Coord& c) {
+        return this->operator()(c.y, c.x);
+    }
+
+    const auto& operator()(size_t y, size_t x) const {
+        return this->data.at(y * this->width + x);
+    }
+
+    const auto& operator()(const Coord& c) const {
+        return this->operator()(c.y, c.x);
+    }
+
+    bool open(size_t y, size_t x) const {
+        return !this->operator()(y, x);
+    }
+
+    bool open(const Coord& c) const {
+        return !this->operator()(c);
     }
 
     size_t num_open_neighbors(size_t y, size_t x) {
@@ -76,6 +139,10 @@ public:
     }
 };
 
+using Room = std::unordered_set<Coord>;
+using RoomList = std::vector<Room>;
+
+
 Map::Map(size_t height, size_t width, size_t seed)
     : height(height), width(width), vb(64), ib(6), shader(shader_path) {
     float asp = float(this->height) / float(this->width);
@@ -98,7 +165,66 @@ Map::Map(size_t height, size_t width, size_t seed)
     this->regenerate(seed);
 }
 
+
+void extents(const MapData& m, const Coord& c, Room& r) {
+    r.insert(c);
+    for (int j = -1; j <= 1; j++) {
+        for (int i = -1; i <= 1; i++) {
+            if (i == 0 and j == 0)
+                continue;
+
+            Coord o{c.x + i, c.y + j};
+
+            if (o.x < 0 or o.x >= m.width or o.y < 0 or o.y >= m.height)
+                continue;
+
+            if (m.open(o) and !r.count(o))
+                extents(m, o, r);
+        }
+    }
+}
+
+
+RoomList find_rooms(const MapData& m) {
+    Room all;
+    std::vector<Room> rooms;
+
+    for (size_t j = 0; j < m.height; j++) {
+        for (size_t i = 0; i < m.width; i++) {
+            Coord c {i, j};
+
+            if (m.open(c) and !all.count(c)) {
+                rooms.emplace_back();
+                extents(m, c, rooms.back());
+
+                for (auto& coord : rooms.back())
+                    all.insert(coord);
+            }
+        }
+    }
+
+    return rooms;
+}
+
+RoomList remove_small_bois(MapData& m, const RoomList& rooms, size_t min_size = 10) {
+    RoomList new_rooms;
+
+    for (auto& r : rooms) {
+        if (r.size() >= min_size)
+            new_rooms.push_back(r);
+        else {
+            for (auto& c : r)
+                m(c) = 1;
+        }
+    }
+
+    return new_rooms;
+}
+
 void Map::regenerate(size_t seed) {
+    double start = now();
+    std::cout << "Start" << std::endl;
+
     std::default_random_engine e(seed);
     std::uniform_real_distribution dist(0.0f, 1.0f);
 
@@ -110,15 +236,48 @@ void Map::regenerate(size_t seed) {
     m.smooth(10);
     m.null_border();
 
+    double gen = now();
+
+    auto rooms = remove_small_bois(m, find_rooms(m));
+
+    double rms = now();
+
     std::vector<Color> img_data;
     img_data.reserve(this->height * this->width);
 
-    for (auto& c : m) {
-        if (c)
-            img_data.push_back(Color::light_brown());
-        else
-            img_data.push_back(Color::dark_brown());
+    for (size_t j = 0; j < m.height; j++) {
+        for (size_t i = 0; i < m.width; i++) {
+            if (!m.open(j, i))
+                img_data.push_back(Color::light_brown());
+            else {
+                size_t ri = 0;
+                for (auto& r : rooms) {
+                    if (r.count({i, j}))
+                        break;
+                    ri++;
+                }
+
+                Color rc = room_colors[(ri + rooms.size()) % room_colors.size()];
+
+                img_data.push_back(rc.blend(Color::dark_brown(), 0.05));
+            }
+        }
     }
+
+    double end = now();
+
+    std::cout << "FINISHED " << rooms.size() << std::endl;
+    std::cout << "Gen: " << 1000 * (gen - start) << std::endl;
+    std::cout << "Rooms: " << 1000 * (rms - gen) << std::endl;
+    std::cout << "Draw: " << 1000 * (end - rms) << std::endl;
+    std::cout << "Total: " << 1000 * (end - start) << std::endl;
+
+    // for (auto& c : m) {
+    //     if (c)
+    //         img_data.push_back(Color::light_brown());
+    //     else
+    //         img_data.push_back(Color::dark_brown());
+    // }
 
     this->tex.load_data(this->height, this->width, (uint8_t*)img_data.data());
 }
