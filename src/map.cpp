@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <random>
@@ -13,7 +14,7 @@ double now() {
     return now.count();
 }
 
-static const std::array<Color, 13> room_colors{
+static const std::array<Color, 13> cave_colors{
     Color::red(),
     Color::green(),
     Color::blue(),
@@ -45,15 +46,59 @@ struct std::hash<Coord> {
   }
 };
 
+class Cave {
+public:
+
+    size_t size() const {
+        return this->all_coords.size();
+    }
+
+    void add(const Coord& c, bool border = false) {
+        if (this->all_coords.count(c))
+            return;
+
+        this->all_coords.insert(c);
+        if (border)
+            this->border_coords.push_back(c);
+    }
+
+    bool contains(const Coord& c) const {
+        return this->all_coords.count(c) > 0;
+    }
+
+    auto begin() const {
+        return this->all_coords.cbegin();
+    }
+
+    auto end() const {
+        return this->all_coords.cend();
+    }
+
+    auto border_begin() const {
+        return this->border_coords.cbegin();
+    }
+
+    auto border_end() const {
+        return this->border_coords.cend();
+    }
+
+private:
+    std::unordered_set<Coord> all_coords;
+    std::vector<Coord> border_coords;
+};
 
 class MapData {
 private:
     std::vector<uint8_t> data;
+
 public:
     const size_t height;
     const size_t width;
+    Coord entrance;
+    Coord exit;
+    Coord key;
+    std::vector<Cave> caves;
 
-public:
     MapData(size_t height, size_t width)
         : height(height), width(width) {
         this->data.assign(height * width, 0);
@@ -139,10 +184,6 @@ public:
     }
 };
 
-using Room = std::unordered_set<Coord>;
-using RoomList = std::vector<Room>;
-
-
 Map::Map(size_t height, size_t width, size_t seed)
     : height(height), width(width), vb(64), ib(6), shader(shader_path) {
     float asp = float(this->height) / float(this->width);
@@ -166,8 +207,23 @@ Map::Map(size_t height, size_t width, size_t seed)
 }
 
 
-void extents(const MapData& m, const Coord& c, Room& r) {
-    r.insert(c);
+/*
+ * Return true if the coordinate is adjacent to any non-open cell
+ */
+bool coord_is_edge(const MapData& m, const Coord& c) {
+    return (
+        !m.open(c.y + 1, c.x)
+        || !m.open(c.y - 1, c.x)
+        || !m.open(c.y, c.x + 1)
+        || !m.open(c.y, c.x - 1)
+    );
+}
+
+
+void extents(const MapData& m, const Coord& c, Cave& cave) {
+    bool edge = coord_is_edge(m, c);
+    cave.add(c, edge);
+
     for (int j = -1; j <= 1; j++) {
         for (int i = -1; i <= 1; i++) {
             if (i == 0 and j == 0)
@@ -178,47 +234,106 @@ void extents(const MapData& m, const Coord& c, Room& r) {
             if (o.x < 0 or o.x >= m.width or o.y < 0 or o.y >= m.height)
                 continue;
 
-            if (m.open(o) and !r.count(o))
-                extents(m, o, r);
+            if (m.open(o) and !cave.contains(o))
+                extents(m, o, cave);
         }
     }
 }
 
-
-RoomList find_rooms(const MapData& m) {
-    Room all;
-    std::vector<Room> rooms;
-
+void find_caves(MapData& m) {
     for (size_t j = 0; j < m.height; j++) {
         for (size_t i = 0; i < m.width; i++) {
             Coord c {i, j};
 
-            if (m.open(c) and !all.count(c)) {
-                rooms.emplace_back();
-                extents(m, c, rooms.back());
+            if (!m.open(c))
+                continue;
 
-                for (auto& coord : rooms.back())
-                    all.insert(coord);
+            bool unique = true;
+            for (auto& cave : m.caves) {
+                unique &= !cave.contains(c);
+                if (!unique)
+                    break;
+            }
+
+            if (unique) {
+                m.caves.emplace_back();
+                extents(m, c, m.caves.back());
             }
         }
     }
 
-    return rooms;
+    std::sort(m.caves.begin(), m.caves.end(), [](const Cave& a, const Cave& b) {
+        return a.size() > b.size();
+    });
 }
 
-RoomList remove_small_bois(MapData& m, const RoomList& rooms, size_t min_size = 10) {
-    RoomList new_rooms;
+void remove_small_bois(MapData& m, size_t min_size = 10) {
+    std::vector<Cave> new_caves;
 
-    for (auto& r : rooms) {
-        if (r.size() >= min_size)
-            new_rooms.push_back(r);
+    for (auto& c : m.caves) {
+        if (c.size() >= min_size)
+            new_caves.push_back(c);
         else {
-            for (auto& c : r)
-                m(c) = 1;
+            for (auto& coord : c)
+                m(coord) = 1;
         }
     }
 
-    return new_rooms;
+    m.caves = std::move(new_caves);
+}
+
+
+void create_game_points(MapData& m, size_t seed) {
+    std::default_random_engine e(seed);
+    std::uniform_real_distribution dist(0.0f, 1.0f);
+
+    Cave& cave = m.caves.front();
+    size_t candidates = std::distance(cave.border_begin(), cave.border_end());
+
+    m.entrance = *(size_t(dist(e) * candidates) + cave.border_begin());
+    m.exit = *(size_t(dist(e) * candidates) + cave.border_begin());
+    m.key = *(size_t(dist(e) * candidates) + cave.border_begin());
+}
+
+std::vector<Color> draw_caves(MapData& m) {
+    std::vector<Color> img_data;
+    img_data.reserve(m.height * m.width);
+
+    // draw normal
+
+    for (size_t j = 0; j < m.height; j++) {
+        for (size_t i = 0; i < m.width; i++) {
+            if (!m.open(j, i))
+                img_data.push_back(Color::light_brown());
+            else {
+                size_t ri = 0;
+                for (auto& c : m.caves) {
+                    if (c.contains({i, j}))
+                        break;
+                    ri++;
+                }
+
+                Color rc = cave_colors[(ri + m.caves.size()) % cave_colors.size()];
+
+                img_data.push_back(rc.blend(Color::dark_brown(), 0.05));
+            }
+        }
+    }
+
+    auto big = m.caves.front();
+
+    // draw borders on biggest cave
+    // for (auto c = big.border_begin(); c != big.border_end(); c++) {
+    //     img_data.at(c->y * m.width + c->x) = Color::red();
+    // }
+
+    // draw keypoints
+
+    img_data.at(m.entrance.y * m.width + m.entrance.x) = Color::green();
+    img_data.at(m.exit.y * m.width + m.exit.x) = Color::red();
+    img_data.at(m.key.y * m.width + m.key.x) = Color::yellow();
+
+    return img_data;
 }
 
 void Map::regenerate(size_t seed) {
@@ -238,46 +353,22 @@ void Map::regenerate(size_t seed) {
 
     double gen = now();
 
-    auto rooms = remove_small_bois(m, find_rooms(m));
+    find_caves(m);
+    remove_small_bois(m);
 
     double rms = now();
 
-    std::vector<Color> img_data;
-    img_data.reserve(this->height * this->width);
+    create_game_points(m, seed);
 
-    for (size_t j = 0; j < m.height; j++) {
-        for (size_t i = 0; i < m.width; i++) {
-            if (!m.open(j, i))
-                img_data.push_back(Color::light_brown());
-            else {
-                size_t ri = 0;
-                for (auto& r : rooms) {
-                    if (r.count({i, j}))
-                        break;
-                    ri++;
-                }
-
-                Color rc = room_colors[(ri + rooms.size()) % room_colors.size()];
-
-                img_data.push_back(rc.blend(Color::dark_brown(), 0.05));
-            }
-        }
-    }
+    std::vector<Color> img_data = draw_caves(m);
 
     double end = now();
 
-    std::cout << "FINISHED " << rooms.size() << std::endl;
+    std::cout << "FINISHED " << m.caves.size() << std::endl;
     std::cout << "Gen: " << 1000 * (gen - start) << std::endl;
-    std::cout << "Rooms: " << 1000 * (rms - gen) << std::endl;
+    std::cout << "Caves: " << 1000 * (rms - gen) << std::endl;
     std::cout << "Draw: " << 1000 * (end - rms) << std::endl;
     std::cout << "Total: " << 1000 * (end - start) << std::endl;
-
-    // for (auto& c : m) {
-    //     if (c)
-    //         img_data.push_back(Color::light_brown());
-    //     else
-    //         img_data.push_back(Color::dark_brown());
-    // }
 
     this->tex.load_data(this->height, this->width, (uint8_t*)img_data.data());
 }
