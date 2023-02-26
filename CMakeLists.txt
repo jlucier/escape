@@ -12,7 +12,12 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/glfw/glfw
     GIT_TAG        3.3.8
 )
-FetchContent_MakeAvailable(glfw3)
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm
+    GIT_TAG        0.9.9.8
+)
+FetchContent_MakeAvailable(glfw3 glm)
 
 set(OpenGL_GL_PREFERENCE "GLVND")
 find_package(OpenGL REQUIRED)
@@ -21,13 +26,13 @@ find_package(GLEW REQUIRED)
 target_include_directories(escape PRIVATE
     ${OPENGL_INCLUDE_DIR}
     ${GLEW_INCLUDE_DIRECTORIES}
-    src/vendor/glm
     src
 )
 target_link_libraries(escape PRIVATE
     ${OPENGL_LIBRARIES}
     GLEW::glew
     glfw
+    glm
 )
 target_precompile_headers(escape PRIVATE src/core.hpp)
 target_sources(escape PRIVATE
